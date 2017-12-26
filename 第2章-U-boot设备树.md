@@ -11,6 +11,9 @@ Device tree源文件结构分为**header**、**fill_area**、**dt_struct**和**d
 ![dtb结构图](./images/dtb_struct.png)
 
 ```
+// 反汇编设备树dtb到dts文件
+asb@ubuntu:Iot$ dtc -I dtb -O dts xxx.dtb > xxx.dts
+
 // 二进制查看，根据前4个字节magic来验证dtb，注意大端和小端的区别
 asb@ubuntu:Iot$ hexdump -C imx6q-sabresd.dtb | more
 00000000  d0 0d fe ed 00 00 b5 d4  00 00 00 38 00 00 a9 88  |...........8....|

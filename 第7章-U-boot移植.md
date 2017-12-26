@@ -102,7 +102,7 @@ xingyanl@yocto:configs$ vi mx6qsensorgw_defconfig
 # CONFIG_TARGET_MX6SABRESD=y  // 删除
 CONFIG_TARGET_MX6QSENSORGW=y // 添加
 
-// 更新cfg文件目录
+// 更新cfg文件目录，和内存相关配置文件
 # CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/freescale/mx6sabresd/mx6q_4x_mt41j128.cfg,MX6Q"
 CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=board/freescale/mx6qsensorgw/mx6q_4x_mt41j128.cfg,MX6Q"
 
@@ -124,7 +124,7 @@ xingyanl@yocto:dts$ cp imx6q-sabresd.dts imx6q-sensorgw.dts
 xingyanl@yocto:uboot$ vi u-boot.sh
 #!/bin/bash
 export ARCH=arm
-# 指定交叉编译器目录
+# 指定交叉编译器目录---重要
 export CROSS_COMPILE=/opt/fsl-imx-x11/4.1.15-2.0.0/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-
 make distclean;
 make mx6qsensorgw_defconfig

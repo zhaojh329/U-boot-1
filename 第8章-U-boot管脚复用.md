@@ -78,3 +78,48 @@ read_cmp PSR, 32'hxxxxxxx5
 
 #### **5.3 从PSR寄存器读取值**
 ![](./images/GPIO_PSR.png)
+
+
+
+### **6. 实例**
+> **点亮上面流程中的LED灯**   
+
+#### **6.1 设置复用功能控制器IOMUX为GPIO模式**
+```
+// 复用控制器地址
+volatile  uint_32  *p_GPIO02_IOMUX = (uint_32*)0x20E0234u;
+// 配置
+*p_GPIO02_IOMUX &= 0;    // 清MUX位段
+*p_GPIO02_IOMUX |= 0x15; // 设置为GPIO模式
+
+```
+
+#### **6.2 设置方向寄存器GDIR**
+```
+// 基地址
+volatile  uint_32  *p_BASE = (uint_32*)0x209C000u;
+// 方向寄存器地址
+volatile  uint_32  *p_GPIO_GDIR = p_BASE + 4;
+// 1为output输出模式
+*p_GPIO_GDIR |= (1 << 2)
+// 0位input输入模式
+*p_GPIO_GDIR &= ~(1 << 2)
+```
+
+#### **6.3 设置数据寄存器DR**
+```
+// 数据寄存器地址
+volatile  uint_32  *p_GPIO_DR   = p_BASE + 0;
+// 亮
+*p_GPIO_DR |= (1<<2);
+// 灭
+*p_GPIO_DR &= ~(1<<2);
+```
+
+#### **6.4 查看PSR寄存器**
+```
+// PSR寄存器基地址
+volatile  uint_32  *p_GPIO_PSR  = p_BASE + 8;
+// 查看PSR内容
+*p_GPIO_PSR
+```

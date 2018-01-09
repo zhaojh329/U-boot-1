@@ -143,3 +143,6 @@ include/config/%.conf: $(KCONFIG_CONFIG) include/config/auto.conf.cmd
 ```
 
 ![u-boot.imx目标关系依赖图](./images/u-boot_makefile.JPG)
+
+-----
+

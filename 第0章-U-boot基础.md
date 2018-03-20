@@ -1,16 +1,21 @@
-### **u-boot常用命令**
+# 基础
 
-**go命令**  
-跳转到指定地址执行
+------
+## 1. 概念
 
-**AHB/APB**  
-AHB主要用于高性能模块(如CPU, DMA和DSP等)之间的连接，是SOC的片上系统总线     
-APB主要用于低带宽的周围外设之间的连接，如UART、1284等
+### 1.1 AHB/APB  
+- AHB主要用于高性能模块(如CPU, DMA和DSP等)之间的连接，是SOC的片上系统总线     
+- APB主要用于低带宽的周围外设之间的连接，如UART等
 
-**BIOS是基本输入输出系统**  
-固化在计算机内主板上一个ROM芯片上的程序，保存计算机最重要的基本输入输出的程序，系统设置程序，开机自检程序和系统自启动程序；主要是提供最底层，最直接的硬件设置和控制
+### 1.2 BIOS基本输入输出系统  
+- 固化在计算机内主板上一个ROM芯片上的程序，保存计算机最重要的基本输入输出的程序，如系统设置程序，开机自检程序和系统自启动程序；提供最底层，最直接的硬件设置和控制
 
-**help命令**
+------
+## 2. 命令
+### 2.1 go  
+- 跳转到指定地址执行
+
+### 2.2 help
 ```
 => help
 ?       - alias for 'help'
@@ -104,7 +109,7 @@ usbboot - boot from USB device
 version - print monitor, compiler and linker version
 ```
 
-**u-boot环境变量**
+### 2.3 u-boot环境变量
 ```
 Normal Boot
 Hit any key to stop autoboot:  0
@@ -154,9 +159,4 @@ update_sd_firmware=if test ${ip_dyn} = yes; then setenv get_cmd dhcp; else seten
 Environment size: 3587/8188 bytes
 => 
 ```
-**内存**   
-内存(即随机存储器RAM)分为**静态随机存储器SRAM**，和**动态随机存储器DRAM**两种
-> a) 常指的“内存”是指DRAM, 而SRAM大家却接触的很少    
-b) SRAM一种非常重要的存储器，它的用途广泛，速度非常快，在快速读取和刷新时能够保持数据完整性    
-c) SRAM内部采用的是双稳态电路的形式来存储数据，所以电路结构非常复杂，制造成本高  
-d) 目前SRAM基本上只用于CPU内部的一级缓存和二级缓存，或少量的网络服务器以及路由器上
+

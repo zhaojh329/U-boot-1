@@ -8,8 +8,11 @@
 
 - 初始化uclass链表**gd->uclass_root**
 ```
-#define DM_UCLASS_ROOT_NON_CONST	(((gd_t *)gd)->uclass_root)
+#define DM_UCLASS_ROOT_NON_CONST	(gd->uclass_root)
 INIT_LIST_HEAD(&DM_UCLASS_ROOT_NON_CONST); // 初始化uclass
+
+#define DM_ROOT_NON_CONST		(gd->dm_root) dm_root是struct udevice*类型
+
 ```
 
 ### 1.2 udevice和uclass的解析
@@ -20,10 +23,11 @@ INIT_LIST_HEAD(&DM_UCLASS_ROOT_NON_CONST); // 初始化uclass
 5. 调用部分的driver      
 
 ```
+ret = device_bind_by_name(NULL, false, &root_info, &DM_ROOT_NON_CONST); // dm的根udevice
+
+//
 int device_bind_by_name(struct udevice *parent, bool pre_reloc_only,
 			const struct driver_info *info, struct udevice **devp)
-
-ret = device_bind_by_name(NULL, false, &root_info, &DM_ROOT_NON_CONST); // dm的根udevice
 
 ```
 ------

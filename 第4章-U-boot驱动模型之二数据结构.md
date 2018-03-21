@@ -1,6 +1,7 @@
-## **第4章-U-boot驱动模型之二数据结构**
-### **2. 数据结构**
-#### **2.1 uclass_id**
+# 数据结构
+
+------
+## 2. uclass_id
 **每种uclass有对应的ID号，定义在其uclass_driver中，这个和ID号和其对应的udevice中的driver中的uclass_id一样**
 ```
 // include/dm/uclass-id.h
@@ -13,8 +14,9 @@ enum uclass_id {
 }
 ```
 
-#### **2.2 uclass**
-##### **2.2.1 数据结构**
+------
+## 3. uclass
+### 3.1 数据结构
 ```
 struct uclass {
     // uclass的私有数据指针
@@ -27,20 +29,21 @@ struct uclass {
     struct list_head sibling_node;
 };
 ```
-##### **2.2.2 生成**   
+### 3.2 生成   
 有对应uclass driver并且下面挂有udevice的uclass才会被uboot自动生成  
 
-##### **2.2.3 存放位置**  
+### 3.3 存放位置  
 所有生成的都会挂接到gd->uclass_root链表上  
 
-##### **2.2.4 获取对应的API**  
+### 3.4 获取对应的API  
 ```
 // 根据uclass_id遍历gd->ulcass_root链表
 int uclass_get(enum uclass_id key, struct uclass **ucp);
 ```
 
-#### **2.3 uclass_driver**
-##### **2.3.1 数据结构**
+------
+## 4. uclass_driver
+### 4.1 数据结构
 ```
 // include/dm/uclass.h，每个uclass都有对应的uclass_driver
 struct uclass_driver {
@@ -64,8 +67,8 @@ struct uclass_driver {
 };
 
 ```
-##### **2.3.2 生成**   
-**通过UCLASS_DRIVER定义uclass_driver**
+### 4.2 生成   
+- 通过UCLASS\_DRIVER定义uclass\_driver
 ```
 // 以serial-uclass为例
 UCLASS_DRIVER(serial) = {
@@ -77,7 +80,7 @@ UCLASS_DRIVER(serial) = {
     .per_device_auto_alloc_size = sizeof(struct serial_dev_priv),
 };
 ```
-**UCLASS_DRIVER宏定义**
+- UCLASS_DRIVER宏定义
 
 ```
 #define UCLASS_DRIVER(__name)                       \
@@ -88,7 +91,7 @@ UCLASS_DRIVER(serial) = {
             __attribute__((unused,              \
             section(".u_boot_list_2_"#_list"_2_"#_name)))
 ```
-**最终会得到如下结构体，并且存放在.u_boot_list_2_uclass_2_serial段中**
+- 最终会得到如下结构体，并且存放在.u\_boot\_list\_2\_uclass\_2\_serial段中
 
 ```
 struct uclass_driver  _u_boot_list_2_uclass_2_serial = {
@@ -101,7 +104,7 @@ struct uclass_driver  _u_boot_list_2_uclass_2_serial = {
 }
 ```
 
-##### **2.3.3 存放位置**  
+### 4.3 存放位置  
 通过查看u-boot.map可以得到：
 ```
 .u_boot_list_2_uclass_1
@@ -122,10 +125,10 @@ struct uclass_driver  _u_boot_list_2_uclass_2_serial = {
                 0x23e36a00        0x0 drivers/built-in.o
                 0x23e36a00                . = ALIGN (0x4)
 ```
-**即所有的uclass driver都会放在.u_boot_list_2_uclass_1和.u_boot_list_2_uclass_3的区间中，这个列表也称为uclass_driver table**
+- 即所有的uclass driver都会放在.u_boot_list_2_uclass_1和.u_boot_list_2_uclass_3的区间中，这个列表也称为uclass_driver table**
 
-##### **2.3.4 获取对应的API**  
-先获取uclass_driver table，然后遍历获得对应的uclass_driver
+### 4.4 获取对应的API 
+- 先获取uclass\_driver table，然后遍历获得对应的uclass\_driver
 ```
 // 根据.u_boot_list_2_uclass_1的段地址获得uclass_driver table的地址
 struct uclass_driver *uclass =
@@ -138,8 +141,9 @@ const int n_ents = ll_entry_count(struct uclass_driver, uclass);
 struct uclass_driver *lists_uclass_lookup(enum uclass_id id)
 ```
 
-#### **2.4 udevice**
-##### **2.4.1 数据结构**
+------
+## 5. udevice
+### 5.1 数据结构
 ```
 // include/dm/device.h, 描述的是设备树内容
 struct udevice {
@@ -164,15 +168,15 @@ struct udevice {
 };
 ```
 
-##### **2.4.2 生成**   
+### 5.2 生成  
 uboot解析dtb以后动态生成
 
-##### **2.4.3 存放位置**  
-**1. 挂接到对应的uclass上，即挂接到uclass->dev_head**  
-**2. 挂接到父设备的子设备链表中， 即挂接到udevice->child_head, 最上层的父设备是gd->dm_root**
+### 5.3 存放位置 
+1. 挂接到对应的uclass上，即挂接到uclass->dev\_head  
+2. 挂接到父设备的子设备链表中， 即挂接到udevice->child\_head, 最上层的父设备是gd->dm\_root
 
-##### **2.4.4 获取对应的API**  
-**通过uclass获取对应的udevice**
+### 5.4 获取对应的API  
+- 通过uclass获取对应的udevice
 > 不应该是dtb解析获得的吗？的确是通过dtb解析获得
 
 ```
@@ -184,8 +188,9 @@ int uclass_get_device_by_of_offset(enum uclass_id id, int node,
 int uclass_resolve_seq(struct udevice *dev);
 ```
 
-#### **2.5 driver**
-##### **2.5.1 数据结构**
+------
+## 6. driver
+### 6.1 数据结构
 ```
 // include/dm/device.h
 struct driver {
@@ -208,8 +213,8 @@ struct driver {
 };
 ```
 
-##### **2.5.2 生成**   
-**通过U_BOOT_DRIVER定义一个driver**
+### 6.2 生成   
+- 通过U\_BOOT\_DRIVER定义一个driver
 ```
 // 以serial为例
 U_BOOT_DRIVER(serial_s5p) = {
@@ -224,7 +229,7 @@ U_BOOT_DRIVER(serial_s5p) = {
     .flags = DM_FLAG_PRE_RELOC,
 };
 ```
-**U_BOOT_DRIVER宏定义如下，生成的结构体保存在.u_boot_list_2_driver_2_serial_s5p段中**
+- U\_BOOT\_DRIVER宏定义如下，生成的结构体保存在.u\_boot\_list\_2\_driver\_2\_serial\_s5p段中**
 
 ```
 // U_BOOT_DRIVER宏定义
@@ -249,7 +254,7 @@ struct driver _u_boot_list_2_driver_2_serial_s5p= {
 };
 ```
 
-##### **2.5.3 存放位置**  
+### 6.3 存放位置  
 通过查看u-boot.map可以得到：
 ```
  .u_boot_list_2_driver_1
@@ -273,10 +278,10 @@ struct driver _u_boot_list_2_driver_2_serial_s5p= {
  .u_boot_list_2_driver_3
                 0x00000000178748f0        0x0 drivers/built-in.o
 ```
-**即所有driver都会放在.u_boot_list_2_driver_1和.u_boot_list_2_driver_3的区间中，这个列表也称为driver table**
+- 即所有driver都会放在.u\_boot\_list\_2\_driver\_1和.u\_boot\_list\_2\_driver\_3的区间中，这个列表也称为driver table
 
-##### **2.5.4 获取对应的API**  
-先获取driver table，然后遍历获得对应的driver
+### 6.4 获取对应的API  
+- 先获取driver table，然后遍历获得对应的driver
 ```
 // 根据.u_boot_list_2_driver_1的段地址获得driver table的地址
 struct driver *drv =
@@ -289,22 +294,23 @@ const int n_ents = ll_entry_count(struct driver, driver);
 struct driver *lists_driver_lookup_name(const char *name)
 ```
 
-#### **2.6 相关API**
-##### **2.6.1 uclass**
+------
+## 7. 相关API
+### 7.1 uclass
 ```
 // 从gd->uclass_root链表获取对应的uclass
 // uclass是从gd->uclass_root链表中获得, 参数有uclass_id
 int uclass_get(enum uclass_id key, struct uclass **ucp);
 ```
 
-##### **2.6.2 uclass_driver**
+### 7.2 uclass_driver
 ```
 // 根据uclass id从uclass_driver table中获取
 // uclass_driver是从uclass_driver 中获得，参数是uclass_id
 struct uclass_driver *lists_uclass_lookup(enum uclass_id id)
 ```
 
-##### **2.6.3 udevice**
+### 7.3 udevice
 ```
 #define uclass_foreach_dev(pos, uc) \
     list_for_each_entry(pos, &uc->dev_head, uclass_node)
@@ -340,7 +346,7 @@ int uclass_get_device_by_of_offset(enum uclass_id id, int node,
 int uclass_resolve_seq(struct udevice *dev);
 ```
 
-##### **2.6.4 driver**
+### 7.4 driver
 ```
 // 根据name从driver table中获取
 struct driver *lists_driver_lookup_name(const char *name)

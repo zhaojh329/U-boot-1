@@ -1,21 +1,34 @@
-## **第4章-U-boot驱动模型之三流程**
-### **3. DM的初始化**
-#### **3.1 主要工作**
-##### **3.1.1 初始化DM**
-**a) 创建根设备root的udevice，放在gd->dm_root中**
+# 流程
+
+------
+## 1. DM的初始化
+### 1.1 初始化DM
+- 创建根设备root的udevice，放在gd->dm_root中
 > 根设备其实是一个虚拟设备，主要为其他设备提供一个挂载点
 
-**b) 初始化uclass链表gd->uclass_root**
+- 初始化uclass链表**gd->uclass_root**
+```
+#define DM_UCLASS_ROOT_NON_CONST	(((gd_t *)gd)->uclass_root)
+INIT_LIST_HEAD(&DM_UCLASS_ROOT_NON_CONST); // 初始化uclass
+```
 
-##### **3.1.2 udevice和uclass的解析**
-**a) 创建udevice和uclass**   
-**b) 绑定udevice和uclass**   
-**c) 绑定udevice和driver**   
-**d) 绑定uclass和uclass_driver**    
-**e) 调用部分的driver**   
+### 1.2 udevice和uclass的解析
+1. 创建udevice和uclass   
+2. 绑定udevice和uclass   
+3. 绑定udevice和driver   
+4. 绑定uclass和uclass_driver    
+5. 调用部分的driver      
 
-#### **3.2 入口说明**
-> dts节点中的“u-boot,dm-pre-reloc”属性，当设置了这个属性时，则表示这个设备在relocate之前就需要使用
+```
+int device_bind_by_name(struct udevice *parent, bool pre_reloc_only,
+			const struct driver_info *info, struct udevice **devp)
+
+ret = device_bind_by_name(NULL, false, &root_info, &DM_ROOT_NON_CONST); // dm的根udevice
+
+```
+------
+## 2. 入口说明
+> dts节点中的**u-boot,dm-pre-reloc**属性，当设置了这个属性时，则表示这个设备在relocate之前就需要使用
 
 ```
 // 只对带有“u-boot,dm-pre-reloc”属性的节点进行解析，情况少
@@ -25,7 +38,7 @@ dm_init_and_scan(true);
 dm_init_and_scan(false);
 ```
 
-##### **3.2.1 dm_init_and_scan说明**
+### 2.1 dm\_init\_and\_scan说明
 ![initf_dm](./images/initf_dm.png)
 
 ```
@@ -44,7 +57,7 @@ int dm_init_and_scan(bool pre_reloc_only)
 }
 ```
 
-##### **3.2.2 dm_init**
+### 2.2 dm_init
 > a) 创建根设备root的udevice，放在gd->dm_root中, 即创建设备链表头   
   b) 初始化uclass链表gd->uclass_root, 即创建uclass链表头   
 
@@ -123,11 +136,11 @@ int device_probe(struct udevice *dev)
 }
 ```
 
-##### **3.2.3 从平台设备中解析udevice和uclass——dm_scan_platdata**
+### 2.3 从平台设备中解析udevice和uclass——dm\_scan\_platdata
 ![dm_scan_platdata](./images/dm_scan_platdata.png)
 TBD
 
-##### **3.2.4 dm_scan_fdt: 从dtb中解析udevice和uclass**
+### 2.4 dm\_scan\_fdt: 从dtb中解析udevice和uclass
 
 ![dm_scan_fdt](./images/dm_scan_fdt.png)
 
@@ -206,13 +219,14 @@ int device_bind(struct udevice *parent, const struct driver *drv,
 
 
 **TBD，差一个流程图**
+
 -------
-### **4. DM的probe**
-#### **4.1 device_probe函数**
-**a) 分配设备的私有数据**    
-**b) 对父设备probe，执行probe device之前uclass需要调用的一些函数**  
-**c) 调用driver的ofdata_to_platdata，将dts信息转化为设备的平台数据**   
-**d) 调用driver的probe函数，执行probe device之后uclass需要调用的一些函数**  
+## 3. DM的probe
+### 3.1 device_probe函数
+1. 分配设备的私有数据    
+2. 对父设备probe，执行probe device之前uclass需要调用的一些函数 
+3. 调用driver的ofdata_to_platdata，将dts信息转化为设备的平台数据  
+4. 调用driver的probe函数，执行probe device之后uclass需要调用的一些函数  
 
 ![device_probe](./images/device_probe.png)
 ```
@@ -223,7 +237,7 @@ int device_probe(struct udevice *dev)
 }
 ```
 
-#### **4.2 通过uclass获取一个udevice并且probe**
+### 3.2 通过uclass获取一个udevice并且probe
 ```
 // driver/core/uclass.c
 //通过索引从uclass的设备链表中获取udevice，进行probe
@@ -251,7 +265,7 @@ int uclass_next_device(struct udevice **devp)
 ```
 **以上接口主要是获取设备的方法上有所区别，但是probe设备的方法都是一样的**  
 
-**以uclass_get_device为例**
+### 3.3 以uclass\_get\_device为例
 ```
 int uclass_get_device(enum uclass_id id, int index, struct udevice **devp)
 {

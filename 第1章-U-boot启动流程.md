@@ -2,6 +2,7 @@
 - 板子上电以后，首先执行的是ROM中的一段启动代码。启动代码**根据寄存器/外部管脚配置**，确定是进入下载模式，还是从某介质(Flash/EMMC/SD卡等存储设备)启动u-boot
 > ROM中的代码是固化的，无法修改
 
+**先分析架构，不要开始就进入细节**         
 ------
 ## 1 从上电到u-boot(EMMC为例)
 - 根据IMX6Q数据手册描述:
@@ -38,6 +39,8 @@ Program Image是freescale定义的一个镜像数据结构，它里面包括镜�
 
 ------
 ## 2 u-boot启动概览 
+![初始化流程](./images/uboot.jpg)
+
 ### 2.1 arch级初始化 
 - 主要是设置SVC模式，关中断、设置寄存器等芯片级别的初始化
 ```
@@ -68,7 +71,8 @@ _main—————>board_init_f_alloc_reserve ——————>堆栈、GD�
 ```
 
 ### 2.3 u-boot.lds链接文件
-- u-boot入口文件：/arch/arm/cpu/u-boot.lds; 主要**指示u-boot的入口地址以及各个段的分布**
+- u-boot入口文件：/arch/arm/cpu/u-boot.lds; 主要**指示u-boot的入口地址以及ELF各个段的分布**
+> b用于**不返回的跳转**，比如跳到xxx标号处，b xxx；bl用于**子程序跳转，要返回地址，返回地址存于LR中；**当发生bl跳转前，会在寄存器R14(即LR)中保存当前PC-4，即bl跳转指令的下一条指令的地址。所以在返回时只要**mov lr, pc** 
 
 ```
 // 入口地址，定义在vectors.S文件中
@@ -178,7 +182,7 @@ ENTRY(_main)
     ......
     b	relocate_code
     // 板后期初始化，common\board_r.c
-    ldr	pc, =board_init_r
+    ldr	pc, =board_init_r  // 进入主函数
 ENDPROC(_main)
 ```
 

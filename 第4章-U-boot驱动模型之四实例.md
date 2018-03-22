@@ -1,31 +1,37 @@
-## **第4章实例**
-### **1. 实例一: serial驱动**
-#### **1.1 定义uclass_driver**
+# 实例
+
+------
+## 1. serial驱动
+### 1.1 定义uclass_driver 
 ```
-// 在serial-uclass.c中定义一个uclass_driver
 UCLASS_DRIVER(serial) = {
-    .id        = UCLASS_SERIAL, //这里的uclass_id和driver中的uclass_id一致
-    .name        = "serial",
-    .flags        = DM_UC_FLAG_SEQ_ALIAS,   
-    .post_probe    = serial_post_probe,
-    .pre_remove    = serial_pre_remove,
-    .per_device_auto_alloc_size = sizeof(struct serial_dev_priv),
+	.id		= UCLASS_SERIAL,  //设置对应的uclass id，并且存放在.u_boot_list_2_uclass_2_serial段中
+	.name		= "serial",
+	.flags		= DM_UC_FLAG_SEQ_ALIAS,
+	.post_probe	= serial_post_probe,
+	.pre_remove	= serial_pre_remove,
+	.per_device_auto_alloc_size = sizeof(struct serial_dev_priv),
 };
 ```
 
-#### **1.2 定义serial的dts节点**
+### 1.2 dts文件中serial节点
 ```
-serial@e2900000 {
-        //注意这里的compatible
-        compatible = "samsung,exynos4210-uart";
-        reg = <0xe2900000 0x100>;
-        interrupts = <0 51 0>;
-        id = <0>;
-};  
+				serial@02020000 {
+					compatible = "fsl,imx6q-uart", "fsl,imx21-uart";
+					reg = <0x2020000 0x4000>;
+					interrupts = <0x0 0x1a 0x4>;
+					clocks = <0x3 0xa0 0x3 0xa1>;
+					clock-names = "ipg", "per";
+					dmas = <0x8 0x19 0x4 0x0 0x8 0x1a 0x4 0x0>;
+					dma-names = "rx", "tx";
+					status = "okay";
+					pinctrl-names = "default";
+					pinctrl-0 = <0xc>;
+				};
 
 ```
 
-#### **1.3 定义设备驱动**
+### 1.3 定义设备驱动
 ```
 U_BOOT_DRIVER(serial_s5p) = {
     .name    = "serial_s5p",
@@ -45,13 +51,22 @@ static const struct udevice_id s5p_serial_ids[] = {
 
 ```
 
-##### **1.3.1 udevice和对应uclass的创建 **
-**dm_scan_fdt**
+### 1.4 udevice和对应uclass的创建
+**dm\_scan\_fdt**
+```
+fdtdec_get_chosen_node ------>  fdtdec_get_chosen_prop
 
-##### **1.3.2 udevice和对应uclass的绑定 **
-**核心解析函数lists_bind_fdt**
+	chosen { // chosen节点也位于根节点下，该节点用来给内核传递参数（不代表实际硬件）
+            // 从串口输出
+		stdout-path = "/soc/aips-bus@02000000/spba-bus@02000000/serial@02020000";
+	};   
 
-##### **1.3.3 对应udevice的probe**
+    
+```
+### 1.5 udevice和对应uclass的绑定
+**核心解析函数lists\_bind\_fdt**
+
+### 1.6 对应udevice的probe
 ```
 int serial_init(void)
 {
@@ -78,7 +93,7 @@ static void serial_find_console_or_panic(void)
     }
 }
 ```
-##### **1.3.4 uclass的接口调用**
+### 1.7 uclass的接口调用
 ```
 void serial_putc(char ch)
 {
@@ -103,26 +118,26 @@ static void _serial_putc(struct udevice *dev, char ch)
 
 
 ------
-### **2. 实例二: gpio驱动**
-#### **2.1 dm-gpio架构**
-**gpio的驱动模型架构如图所示：**  
+##  2. gpio驱动
+### 2.1 dm-gpio架构
+- gpio的驱动模型架构如图所示：  
 ![gpio驱动模型架构](./images/gpio.jpg)
 
-##### **2.1.1 gpio core主要任务是：**   
+#### 2.1.1 gpio core  
 a) 为上层提供接口  
 b) 从dts中获取GPIO属性  
 c) 从gpio uclass的设备链表中获取对应udevice设备，并使用其操作集
 
-##### **2.1.2 gpio uclass**
+#### 2.1.2 gpio uclass
 a) 链接属于该uclass的所有udevice   
 b) 为udevice的driver提供统一操作集接口
 
-##### **2.1.3 bank和udevice**
+#### 2.1.3 bank和udevice
 a) 在某些平台，把使用同一组寄存器的GPIO构成一个bank，但是不是所有的都有bank的概念，如果每个GPIO都有自己独立的寄存器，则可看成只有一个bank
 b) 一个bank对应一个udevice，用bank中的偏移表示具体GPIO号
 c) udevice的driver根据bank和offset来操作对应寄存器的bit
 
-#### **2.2 基本原理**
+### 2.2 基本原理
 a) 一个bank对应一个udevice，udevice中私有数据中存放着该bank的信息，比如相应寄存器地址等等
 b) 上层通过调用gpio core的接口从dtsi获取到GPIO属性对应的gpio_desc描述符，用此描述符描述一个GPIO，它包括该GPIO所属的udevice、在bank内的偏移、以及标志位等
 c) 上层使用gpio_desc描述符来作为调用gpio core的操作接口的参数
@@ -130,29 +145,24 @@ d) gpio core从gpio_desc描述符提取udevice，并调用其driver中对应的�
 e) driver中提取udevice的私有数据中的bank信息，并进行相应的操作
 f)
 
-#### **2.2 dm-gpio架构**
 
-##### **2.2.1 架构图**
-
-
-#### **2.3 dm-gpio架构**
-
-##### **2.3.1 架构图**
+### 2.3  driver
 
 
-#### **2.4 dm-gpio架构**
-
-##### **2.4.1 架构图**
+### 2.4 uclass_driver
 
 
-#### **2.5 dm-gpio架构**
 
-##### **2.5.1 架构图**
+### 2.5 uclass
 
 
-#### **2.6 dm-gpio架构**
 
-##### **2.6.1 架构图**
+
+### 2.6 udevice
+
+
+
+### 2.7 绑定流程
 driver为uclass提供操作集，其中保存了uclass_id
 
 

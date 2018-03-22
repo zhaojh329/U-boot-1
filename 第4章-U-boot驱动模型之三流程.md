@@ -1,5 +1,5 @@
 # 流程
-
+// 根据驱动跑一遍
 ------
 ## 1. DM的初始化
 ### 1.1 初始化DM
@@ -28,6 +28,19 @@ ret = device_bind_by_name(NULL, false, &root_info, &DM_ROOT_NON_CONST); // dm的
 //
 int device_bind_by_name(struct udevice *parent, bool pre_reloc_only,
 			const struct driver_info *info, struct udevice **devp)
+
+/* This is the root driver - all drivers are children of this */
+U_BOOT_DRIVER(root_driver) = {
+	.name	= "root_driver",
+	.id	= UCLASS_ROOT,
+	.priv_auto_alloc_size = sizeof(struct root_priv),
+};
+
+/* This is the root uclass */
+UCLASS_DRIVER(root) = {
+	.name	= "root",
+	.id	= UCLASS_ROOT,
+};
 
 ```
 ------
@@ -62,14 +75,44 @@ int dm_init_and_scan(bool pre_reloc_only)
 ```
 
 ### 2.2 dm_init
-> a) 创建根设备root的udevice，放在gd->dm_root中, 即创建设备链表头   
-  b) 初始化uclass链表gd->uclass_root, 即创建uclass链表头   
+- 创建根设备root的udevice，放在gd->dm_root中, 即创建设备链表头   
+- 初始化uclass链表gd->uclass_root, 即创建uclass链表头   
+
+- **driver数组，从u-boot.map中查找**
+```
+/**
+ * ll_entry_start() - Point to first entry of linker-generated array
+ * @_type:	Data type of the entry
+ * @_list:	Name of the list in which this entry is placed
+ *
+ * This function returns (_type *) pointer to the very first entry of a
+ * linker-generated array placed into subsection of .u_boot_list section
+ * specified by _list argument.
+ *
+ * Since this macro defines an array start symbol, its leftmost index
+ * must be 2 and its rightmost index must be 1.
+ *
+ * Example:
+ * struct my_sub_cmd *msc = ll_entry_start(struct my_sub_cmd, cmd_sub);
+ */
+#define ll_entry_start(_type, _list)
+({ static char start[0] __aligned(4) __attribute__((unused, section(".u_boot_list_2_driver_1"))); (struct driver *)&start;})
+
+ll_entry_start(struct driver, driver)
+
+```
 
  ![dm_init](./images/dm_init.png)
+
 ```
 // driver/core/root.c
 #define DM_ROOT_NON_CONST       (((gd_t *)gd)->dm_root) // 宏定义根设备指针gd->dm_root
 #define DM_UCLASS_ROOT_NON_CONST    (((gd_t *)gd)->uclass_root) // 宏定义gd->uclass_root，uclass的链表
+
+// root_info就实现了一个.name属性，其他为默认值
+static const struct driver_info root_info = {
+	.name		= "root_driver",
+};
 
 int dm_init(void)
 {
@@ -84,24 +127,106 @@ int dm_init(void)
     ret = device_probe(DM_ROOT_NON_CONST);
 }
 
-// 找driver
-int device_bind_by_name(struct udevice *parent, bool pre_reloc_only,
-			const struct driver_info *info, struct udevice **devp)
+// 1. 根据driver的name找到driver，其中名字为"root_driver"
+int device_bind_by_name(struct udevice *parent(NULL), bool pre_reloc_only(false),
+			const struct driver_info *info("root_info"), struct udevice **devp(gd->uclass_root))
 {
-    // 根据name找driver
 	drv = lists_driver_lookup_name(info->name);  
 	return device_bind_common(parent, drv, info->name,
 			(void *)info->platdata, 0, -1, platdata_size, devp);
 }
 
-//  绑定
+// 2. 查询driver列表，找到root_driver，并且返回root_driver的地址
+struct driver *lists_driver_lookup_name(const char *name)
+{
+    // 在u-boot.map文件中找到driver列表的起始地址为.u_boot_list_2_driver_1
+	struct driver *drv =
+		ll_entry_start(struct driver, driver);
+
+ .u_boot_list_2_driver_1
+                0x00000000178743a0        0x0 drivers/built-in.o
+ .u_boot_list_2_driver_2_asix_eth
+                0x00000000178743a0       0x44 drivers/usb/eth/built-in.o
+                0x00000000178743a0                _u_boot_list_2_driver_2_asix_eth
+ .u_boot_list_2_driver_2_fecmxc_gem
+                0x00000000178743e4       0x44 drivers/net/built-in.o
+                0x00000000178743e4                _u_boot_list_2_driver_2_fecmxc_gem
+ .u_boot_list_2_driver_2_fixed_regulator
+                0x0000000017874428       0x44 drivers/power/regulator/built-in.o
+                0x0000000017874428                _u_boot_list_2_driver_2_fixed_regulator
+                .......................
+
+    // 找到driver列表的end地址
+    .u_boot_list_2_driver_3
+
+
+    // 计算出一共有对个驱动
+	const int n_ents = ll_entry_count(struct driver, driver);
+	struct driver *entry;
+
+	for (entry = drv; entry != drv + n_ents; entry++) {
+		if (!strcmp(name, entry->name))
+			return entry;
+	}
+}
+
+**********************************
+
+/* This is the root driver - all drivers are children of this */
+U_BOOT_DRIVER(root_driver) = {
+	.name	= "root_driver",
+	.id	= UCLASS_ROOT, 0
+	.priv_auto_alloc_size = sizeof(struct root_priv),
+};
+**********************************
+//  3. 给定udevice parent, 驱动地址，驱动名字，平台数据，驱动数据，偏移，偏移大小和udevice，返回一个int类型
 static int device_bind_common(struct udevice *parent, const struct driver *drv,
 			      const char *name, void *platdata,
 			      ulong driver_data, int of_offset,
 			      uint of_platdata_size, struct udevice **devp)
 {
-    // 根据uclass_id找uclass
+    // 根据driver中保存的id找uclass，如果不存在就创建一个uclass
     ret = uclass_get(drv->id, &uc);
+*********************************************************
+
+int uclass_get(enum uclass_id id, struct uclass **ucp)
+{
+	struct uclass *uc;
+
+	*ucp = NULL;
+	uc = uclass_find(id);  // 开始是空的，返回0
+	if (!uc)
+		return uclass_add(id, ucp);
+	*ucp = uc;
+
+	return 0;
+}
+
+
+
+/* This is the root uclass */
+UCLASS_DRIVER(root) = {
+	.name	= "root",
+	.id	= UCLASS_ROOT,
+};
+
+
+// 在uclass driver中找对应的uclass driver
+// 根据uclass driver中id和driver中的id对比，如果相等，则返回uclass_driver的起始地址
+// 申请1个uclass的内存，这个uc的uc_driver就是刚才返回的uclass_driver的起始地址
+//	INIT_LIST_HEAD(&uc->sibling_node);  初始化这uc的两个节点为单头结点，指向它自己
+//	INIT_LIST_HEAD(&uc->dev_head);
+// 把uc->sibling_node这个节点插入到gd->uclass_root后面
+// 直接返回这个uclass
+
+.u_boot_list_2_uclass_1
+
+.u_boot_list_2_uclass_2_root
+
+
+.u_boot_list_2_uclass_3
+*********************************************************
+
 
     // 创建一个udevice，和uclass关联
     dev->uclass = uc;
@@ -113,9 +238,11 @@ static int device_bind_common(struct udevice *parent, const struct driver *drv,
         &dev->req_seq)
 
     // 把udevice链接到uclass中，检查是否需要执行uclass_driver的操作 	
+    // 把udevice的uclass_node链接到uclass的dev_head上去
     ret = uclass_bind_device(dev);
 
     // driver和udevice进行绑定， 函数指针，由具体设备指定
+    // 查看driver是否有需要绑定udevice的需求
     ret = drv->bind(dev);
 }
 
@@ -239,6 +366,16 @@ int device_probe(struct udevice *dev)
 {
     // 同上
 }
+
+
+**************************************************************
+ret = uclass_find_device_by_seq(dev->uclass->uc_drv->id, dev->req_seq,
+					false, &dup); // dup是个空设备，要修改的
+
+
+
+**************************************************************
+
 ```
 
 ### 3.2 通过uclass获取一个udevice并且probe
